@@ -471,6 +471,9 @@ typedef struct {
 // 设备初始化，fb为外部帧缓存，非 NULL 将引用外部帧缓存（每行 4字节对齐）
 void device_init(device_t *device, int width, int height, void *fb) {
 	int need = sizeof(void*) * (height * 2 + 1024) + width * height * 8;
+	//堆分配的数据分别是:头两个height为framebuffer和zbuffer的高度指针,存的是没一行数据的指针.
+	//1024数据用来texture
+	//width * height * 8:framebuffer指向的数据如果外部帧缓存,使用外部数据,else使用分配好的数据,zbuffer使用分配好的数据
 	char *ptr = (char*)malloc(need + 64);
 	char *framebuf, *zbuf;
 	int j;
@@ -548,40 +551,54 @@ void device_pixel(device_t *device, int x, int y, IUINT32 color) {
 	}
 }
 
-// 绘制线段
-void device_draw_line(device_t *device, int x1, int y1, int x2, int y2, IUINT32 c) {
+// 绘制线段Bresenham
+void device_draw_line(device_t* device, int x1, int y1, int x2, int y2, IUINT32 c) {
 	int x, y, rem = 0;
-	if (x1 == x2 && y1 == y2) {
+	if (x1 == x2 && y1 == y2) 
+	{
 		device_pixel(device, x1, y1, c);
-	}	else if (x1 == x2) {
+	}	
+	else if (x1 == x2) 
+	{
 		int inc = (y1 <= y2)? 1 : -1;
 		for (y = y1; y != y2; y += inc) device_pixel(device, x1, y, c);
 		device_pixel(device, x2, y2, c);
-	}	else if (y1 == y2) {
+	}	
+	else if (y1 == y2)
+	{
 		int inc = (x1 <= x2)? 1 : -1;
 		for (x = x1; x != x2; x += inc) device_pixel(device, x, y1, c);
 		device_pixel(device, x2, y2, c);
-	}	else {
+	}	
+	else
+	{
 		int dx = (x1 < x2)? x2 - x1 : x1 - x2;
 		int dy = (y1 < y2)? y2 - y1 : y1 - y2;
-		if (dx >= dy) {
+		if (dx >= dy) 
+		{
 			if (x2 < x1) x = x1, y = y1, x1 = x2, y1 = y2, x2 = x, y2 = y;
-			for (x = x1, y = y1; x <= x2; x++) {
+			for (x = x1, y = y1; x <= x2; x++) 
+			{
 				device_pixel(device, x, y, c);
 				rem += dy;
-				if (rem >= dx) {
+				if (rem >= dx)
+				{
 					rem -= dx;
 					y += (y2 >= y1)? 1 : -1;
 					device_pixel(device, x, y, c);
 				}
 			}
 			device_pixel(device, x2, y2, c);
-		}	else {
+		}	
+		else
+		{
 			if (y2 < y1) x = x1, y = y1, x1 = x2, y1 = y2, x2 = x, y2 = y;
-			for (x = x1, y = y1; y <= y2; y++) {
+			for (x = x1, y = y1; y <= y2; y++)
+			{
 				device_pixel(device, x, y, c);
 				rem += dx;
-				if (rem >= dy) {
+				if (rem >= dy) 
+				{
 					rem -= dy;
 					x += (x2 >= x1)? 1 : -1;
 					device_pixel(device, x, y, c);
